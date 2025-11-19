@@ -1,10 +1,10 @@
 "use server";
 
-import { stackServerApp } from "@/stack";
 import { db } from "@/db";
+import type { CreateContact, UpdateContact } from "@/schema";
 import { contactsTable } from "@/schema";
+import { stackServerApp } from "@/stack/server";
 import { and, eq } from "drizzle-orm";
-import type { CreateContact, UpdateContact, Contact } from "@/schema";
 
 export async function createContactAction(data: CreateContact) {
   try {

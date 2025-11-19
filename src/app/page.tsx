@@ -1,5 +1,5 @@
 import { ClientOnly } from "@/components/client-only";
-import { stackServerApp } from "../stack";
+import { stackServerApp } from "@/stack/server";
 import { ContactsList } from "@/components/contacts-list";
 
 export default async function Home() {
