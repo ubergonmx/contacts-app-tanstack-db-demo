@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a real-time contacts management application demonstrating TanStack DB with ElectricSQL sync and Neon Postgres. It showcases optimistic updates, real-time UI synchronization, and user-scoped data access behind Neon Auth.
+This is a real-time contacts management application demonstrating TanStack DB with ElectricSQL sync and Neon Postgres. It showcases optimistic updates, real-time UI synchronization, and user-scoped data access behind Better Auth.
 
 ## Development Commands
 
@@ -31,8 +31,18 @@ The application uses a multi-layered sync architecture:
 ### Key Files & Structure
 
 - `src/schema.ts` - Drizzle schema definitions with Zod validation schemas
-  - Uses `userSyncTable` from `drizzle-orm/neon` for auth integration
   - Exports type-safe schemas for insert/select/update operations
+
+- `src/lib/auth.ts` - Better Auth server configuration
+  - Uses Drizzle adapter with PostgreSQL
+  - Email/password authentication enabled
+  - Session configuration with cookie caching
+
+- `src/lib/auth-client.ts` - Better Auth client for React
+  - Exports `signIn`, `signUp`, `signOut`, `useSession`, `getSession`
+
+- `src/lib/auth-schema.ts` - Better Auth database schema (auto-generated)
+  - Contains `user`, `session`, `account`, `verification` tables
 
 - `src/collections.ts` - TanStack DB collection configuration
   - Defines `contactCollection` with Electric sync options
@@ -40,9 +50,11 @@ The application uses a multi-layered sync architecture:
   - Shape syncs from `/api/contacts` endpoint with user-scoped filtering
 
 - `src/actions/contacts.ts` - Server actions for CRUD operations
-  - All operations validate user auth via `stackServerApp.getUser()`
+  - All operations validate user auth via `auth.api.getSession()`
   - Enforces row-level security by checking `userId` on updates/deletes
   - Returns `{ success, contact/error }` response format
+
+- `src/app/api/auth/[...all]/route.ts` - Better Auth API route handler
 
 - `src/app/api/contacts/route.ts` - Electric Shape proxy endpoint
   - Proxies Electric SQL requests with user-scoped `where` filter
@@ -50,31 +62,38 @@ The application uses a multi-layered sync architecture:
   - Strips problematic headers (`content-encoding`, `content-length`)
 
 - `src/db.ts` - Drizzle database client using Neon HTTP driver
-- `src/stack.tsx` - Stack Auth server app configuration with `nextjs-cookie` token store
 
 ### Authentication Flow
 
-1. Stack Auth handles user authentication with Neon Auth integration
-2. Server actions call `stackServerApp.getUser({ or: "throw" })` to verify auth
+1. Better Auth handles user authentication with email/password
+2. Server actions call `auth.api.getSession()` to verify auth
 3. Shape proxy filters data by `user_id` before streaming to client
 4. All mutations verify user ownership before modifying data
+
+### Auth Pages
+
+- `/sign-in` - Sign in page with email/password
+- `/sign-up` - Sign up page with email/password
 
 ### Client-Side Patterns
 
 Components use `useLiveQuery` from `@tanstack/react-db` to subscribe to collection changes:
 
 ```tsx
-const { data: contacts } = useLiveQuery({
-  collection: contactCollection,
-  filter: or(ilike("name", searchTerm), ilike("email", searchTerm)),
-});
+const { data: contacts } = useLiveQuery(
+  (q) => q.from({ contacts: contactCollection }),
+  [],
+);
 ```
 
 Mutations are called directly on the collection for optimistic updates, which trigger server actions defined in `collections.ts`.
 
+Use `useSession` from `@/lib/auth-client` to get the current user session on the client.
+
 ### Database Migrations
 
-- Schema defined in `src/schema.ts`
+- Contact schema defined in `src/schema.ts`
+- Auth schema defined in `src/lib/auth-schema.ts`
 - Migrations generated via `drizzle-kit generate` into `migrations/` directory
 - Applied using `drizzle-kit migrate`
 - Drizzle config in `drizzle.config.ts` points to `DATABASE_URL`
@@ -83,7 +102,8 @@ Mutations are called directly on the collection for optimistic updates, which tr
 
 Required variables (see `.example.env`):
 
-- `NEXT_PUBLIC_STACK_PROJECT_ID`, `NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY`, `STACK_SECRET_SERVER_KEY` - Stack Auth credentials
+- `BETTER_AUTH_SECRET` - Secret for Better Auth (generate with: `openssl rand -base64 32`)
+- `NEXT_PUBLIC_APP_URL` - App URL (default: http://localhost:3000)
 - `DATABASE_URL` - Neon database connection string
 - `ELECTRIC_SQL_CLOUD_SOURCE_ID`, `ELECTRIC_SQL_CLOUD_SOURCE_SECRET` - ElectricSQL sync engine credentials
 
@@ -93,3 +113,4 @@ Required variables (see `.example.env`):
 - Use unpooled connection string when configuring ElectricSQL sync engine
 - All database operations enforce user-scoped access through `userId` filtering
 - Path alias `@/*` maps to `src/*`
+- Run `npx @better-auth/cli migrate` to create Better Auth tables in database

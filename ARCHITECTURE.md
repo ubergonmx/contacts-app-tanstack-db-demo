@@ -411,16 +411,19 @@ sequenceDiagram
 ## Performance Characteristics
 
 ### Optimistic Updates
+
 - **UI Latency**: ~0ms (instant)
 - **Server Confirmation**: ~100-500ms (network + DB write)
 - **Sync Propagation**: ~50-200ms (ElectricSQL processing + streaming)
 
 ### Real-time Sync
+
 - **Initial Sync**: Depends on data size (typically <1s for small datasets)
 - **Live Updates**: Near real-time (~50-200ms from DB write to all clients)
 - **Polling**: Long-polling keeps connection open, no unnecessary requests
 
 ### Scalability
+
 - **Client-side**: Collections cached in memory, reactive subscriptions
 - **Server-side**: ElectricSQL handles fan-out, Next.js handles auth/filtering
 - **Database**: Postgres logical replication slot per shape
@@ -430,16 +433,19 @@ sequenceDiagram
 ## Security Model
 
 ### Authentication Layer (Stack Auth)
+
 - Cookie-based session management
 - Token validation on every server action
 - Automatic redirect for unauthenticated users
 
 ### Authorization Layer (Row-Level Security)
+
 - Every shape filtered by `user_id='...'` in SQL `WHERE` clause
 - Server actions verify `userId` matches authenticated user
 - Update/Delete operations check ownership before executing
 
 ### Data Isolation
+
 - Users can only sync shapes containing their own data
 - Cross-user data access prevented at proxy level
 - Even if client tampers with requests, server enforces filtering

@@ -1,18 +1,16 @@
 import { pgTable, uuid, text, timestamp } from "drizzle-orm/pg-core";
-import { usersSync as userSyncTable } from "drizzle-orm/neon";
 import { createSchemaFactory } from "drizzle-zod";
 import { z } from "zod";
+import { user } from "./lib/auth-schema";
 
 const { createInsertSchema, createSelectSchema, createUpdateSchema } =
   createSchemaFactory({ zodInstance: z });
-
-export { userSyncTable };
 
 export const contactsTable = pgTable("contacts", {
   id: uuid("id").primaryKey(),
   userId: text("user_id")
     .notNull()
-    .references(() => userSyncTable.id, { onDelete: "cascade" }),
+    .references(() => user.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   email: text("email"),
   tel: text("tel"),
