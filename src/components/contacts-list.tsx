@@ -31,11 +31,14 @@ import {
   User,
   Briefcase,
   Plus,
+  LogOut,
 } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { UpdateContactForm } from "./update-contact-form";
 import { CreateContactForm } from "./create-contact-form";
 import { toast } from "sonner";
+import { signOut } from "@/lib/auth-client";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,9 +52,16 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export function ContactsList() {
+  const router = useRouter();
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.push("/sign-in");
+    router.refresh();
+  };
 
   const {
     data: contacts,
@@ -147,6 +157,14 @@ export function ContactsList() {
           >
             <Plus className="h-4 w-4" />
             Add Contact
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleSignOut}
+            className="flex items-center gap-2"
+          >
+            <LogOut className="h-4 w-4" />
+            Sign out
           </Button>
         </div>
       </CardHeader>

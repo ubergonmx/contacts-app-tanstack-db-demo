@@ -8,6 +8,20 @@
       "when": 1754351613114,
       "tag": "0000_marvelous_hannibal_king",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1763763681372,
+      "tag": "0001_purple_bloodscream",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1763764282026,
+      "tag": "0002_sharp_morlun",
+      "breakpoints": true
     }
   ]
 }

@@ -1,8 +1,16 @@
-import { stackServerApp } from "@/stack";
+import { auth } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
+import { headers } from "next/headers";
 
 export async function GET(request: NextRequest) {
-  const user = await stackServerApp.getUser({ or: "redirect" });
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session?.user) {
+    return NextResponse.redirect(new URL("/sign-in", request.url));
+  }
+
   try {
     const requestUrl = new URL(request.url);
     const electricUrl = new URL("https://api.electric-sql.cloud/v1/shape");
@@ -24,21 +32,21 @@ export async function GET(request: NextRequest) {
     });
 
     electricUrl.searchParams.set("table", "contacts");
-    const filter = `user_id='${user.id}'`;
+    const filter = `user_id='${session.user.id}'`;
     electricUrl.searchParams.set("where", filter);
 
     // Proxy the request to Electric SQL
     const response = await fetch(electricUrl);
 
     // Remove problematic headers that could break decoding
-    const headers = new Headers(response.headers);
-    headers.delete("content-encoding");
-    headers.delete("content-length");
+    const responseHeaders = new Headers(response.headers);
+    responseHeaders.delete("content-encoding");
+    responseHeaders.delete("content-length");
 
     return new Response(response.body, {
       status: response.status,
       statusText: response.statusText,
-      headers,
+      headers: responseHeaders,
     });
   } catch (error) {
     console.error("Electric SQL proxy error:", error);

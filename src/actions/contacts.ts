@@ -1,14 +1,27 @@
 "use server";
 
-import { stackServerApp } from "@/stack";
+import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { contactsTable } from "@/schema";
 import { and, eq } from "drizzle-orm";
-import type { CreateContact, UpdateContact, Contact } from "@/schema";
+import type { CreateContact, UpdateContact } from "@/schema";
+import { headers } from "next/headers";
+
+async function getUser() {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session?.user) {
+    throw new Error("Not authenticated");
+  }
+
+  return session.user;
+}
 
 export async function createContactAction(data: CreateContact) {
   try {
-    const user = await stackServerApp.getUser({ or: "throw" });
+    const user = await getUser();
 
     const now = new Date();
     const newContact = {
@@ -39,7 +52,7 @@ export async function createContactAction(data: CreateContact) {
 
 export async function updateContactAction(id: string, data: UpdateContact) {
   try {
-    const user = await stackServerApp.getUser({ or: "throw" });
+    const user = await getUser();
 
     const updateData = {
       ...data,
@@ -84,7 +97,7 @@ export async function updateContactAction(id: string, data: UpdateContact) {
 
 export async function deleteContactAction(id: string) {
   try {
-    const user = await stackServerApp.getUser({ or: "throw" });
+    const user = await getUser();
 
     // First check if the contact exists and belongs to the user
     const [existingContact] = await db
